@@ -4981,7 +4981,8 @@ avpipe_fini(
         elv_dbg("Checkpoint 7.1.5:");
         elv_dbg("Checkpoint 7.1.6: format_context=%p", mpegts_encoder_ctx->format_context);
         elv_dbg("Checkpoint 7.1.7: format_context->pb=%p", mpegts_encoder_ctx->format_context->pb);
-        if (mpegts_encoder_ctx->format_context->pb) {
+        // The format context may be NULL if the source was not opened, as the decoder never finds a codec
+        if (mpegts_encoder_ctx->format_context && mpegts_encoder_ctx->format_context->pb) {
             if ((rc = avio_close(mpegts_encoder_ctx->format_context->pb)) < 0)
                 elv_warn("Encountered error closing input, url=%s, rc=%d, rc_str=%s", mpegts_encoder_ctx->format_context->url, rc, av_err2str(rc));
         }
@@ -4995,13 +4996,15 @@ avpipe_fini(
                 avcodec_free_context(&mpegts_encoder_ctx->codec_context[i]);
             }
         }
-        // avpipe_opaque is used by elv_io_close in order to properly close the output parts
-        // We hold a reference to it and free it after, as it is not freed there.
-        avpipe_opaque = mpegts_encoder_ctx->format_context->avpipe_opaque;
-        elv_dbg("Checkpoint 7.4: opaque=%p", avpipe_opaque);
-        avformat_free_context(mpegts_encoder_ctx->format_context);
-        if (avpipe_opaque)
-            free(avpipe_opaque);
+        if (mpegts_encoder_ctx->format_context) {
+            // avpipe_opaque is used by elv_io_close in order to properly close the output parts
+            // We hold a reference to it and free it after, as it is not freed there.
+            avpipe_opaque = mpegts_encoder_ctx->format_context->avpipe_opaque;
+            elv_dbg("Checkpoint 7.4: opaque=%p", avpipe_opaque);
+            avformat_free_context(mpegts_encoder_ctx->format_context);
+            if (avpipe_opaque)
+                free(avpipe_opaque);
+        }
         
         elv_dbg("Checkpoint 7.5");
     }

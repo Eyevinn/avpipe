@@ -4980,7 +4980,6 @@ avpipe_fini(
         coderctx_t *mpegts_encoder_ctx = &cp_ctx->encoder_ctx;
         elv_dbg("Checkpoint 7.1.5:");
         elv_dbg("Checkpoint 7.1.6: format_context=%p", mpegts_encoder_ctx->format_context);
-        elv_dbg("Checkpoint 7.1.7: format_context->pb=%p", mpegts_encoder_ctx->format_context->pb);
         // The format context may be NULL if the source was not opened, as the decoder never finds a codec
         if (mpegts_encoder_ctx->format_context && mpegts_encoder_ctx->format_context->pb) {
             if ((rc = avio_close(mpegts_encoder_ctx->format_context->pb)) < 0)

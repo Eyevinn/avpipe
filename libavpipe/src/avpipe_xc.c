@@ -4904,20 +4904,27 @@ avpipe_fini(
     decoder_context = &(*xctx)->decoder_ctx;
     encoder_context = &(*xctx)->encoder_ctx;
 
+    elv_dbg("Checkpoint 1");
+
     /* note: the internal buffer could have changed, and be != avio_ctx_buffer */
     if (decoder_context && decoder_context->format_context) {
         if (decoder_context->format_context->flags & AVFMT_FLAG_CUSTOM_IO) {
             AVIOContext *avioctx = decoder_context->format_context->pb;
             if (avioctx) {
+                elv_dbg("Checkpoint 1.1");
                 av_freep(&avioctx->buffer);
                 av_freep(&avioctx);
             }
         }
     }
 
+    elv_dbg("Checkpoint 2");
+
     /* Corresponds to avformat_open_input */
     if (decoder_context && decoder_context->format_context)
         avformat_close_input(&decoder_context->format_context);
+    
+    elv_dbg("Checkpoint 3");
 
     /* Free filter graph resources */
     if (decoder_context && decoder_context->video_filter_graph)
@@ -4927,11 +4934,14 @@ avpipe_fini(
             avfilter_graph_free(&decoder_context->audio_filter_graph[i]);
     }
 
+    elv_dbg("Checkpoint 4");
+
     if (encoder_context && encoder_context->format_context) {
         void *avpipe_opaque = encoder_context->format_context->avpipe_opaque;
         avformat_free_context(encoder_context->format_context);
         free(avpipe_opaque);
     }
+    elv_dbg("Checkpoint 5");
     if (encoder_context) {
         for (int i=0; i<encoder_context->n_audio_output; i++) { 
             void *avpipe_opaque = encoder_context->format_context2[i]->avpipe_opaque;
@@ -4939,29 +4949,40 @@ avpipe_fini(
             free(avpipe_opaque);
         }
     }
+    elv_dbg("Checkpoint 6");
 
     for (int i=0; i<MAX_STREAMS; i++) {
+
+        elv_dbg("Checkpoint 6.1: freeing %d", i);
         if (decoder_context->codec_context[i]) {
+            elv_dbg("Checkpoint 6.1: closing decoder %d", i);
             /* Corresponds to avcodec_open2() */
             avcodec_close(decoder_context->codec_context[i]);
             avcodec_free_context(&decoder_context->codec_context[i]);
         }
 
         if (encoder_context->codec_context[i]) {
+            elv_dbg("Checkpoint 6.1: closing encoder %d", i);
             /* Corresponds to avcodec_open2() */
             avcodec_close(encoder_context->codec_context[i]);
             avcodec_free_context(&encoder_context->codec_context[i]);
         }
     }
 
+    elv_dbg("Checkpoint 7");
+
     if ((*xctx)->params->copy_mpegts) {
+        elv_dbg("Checkpoint 7.1");
         void *avpipe_opaque;
         cp_ctx_t *cp_ctx = &(*xctx)->cp_ctx;
         coderctx_t *mpegts_encoder_ctx = &cp_ctx->encoder_ctx;
         if ((rc = avio_close(mpegts_encoder_ctx->format_context->pb)) < 0)
             elv_warn("Encountered error closing input, url=%s, rc=%d, rc_str=%s", mpegts_encoder_ctx->format_context->url, rc, av_err2str(rc));
+        
+        elv_dbg("Checkpoint 7.2");
         for (int i=0; i<MAX_STREAMS; i++) {
             if (mpegts_encoder_ctx->codec_context[i]) {
+                elv_dbg("Checkpoint 7.3: closing encoder %d", i);
                 /* Corresponds to avcodec_open2() */
                 avcodec_close(mpegts_encoder_ctx->codec_context[i]);
                 avcodec_free_context(&mpegts_encoder_ctx->codec_context[i]);
@@ -4970,9 +4991,12 @@ avpipe_fini(
         // avpipe_opaque is used by elv_io_close in order to properly close the output parts
         // We hold a reference to it and free it after, as it is not freed there.
         avpipe_opaque = mpegts_encoder_ctx->format_context->avpipe_opaque;
+        elv_dbg("Checkpoint 7.4: opaque=%p", avpipe_opaque);
         avformat_free_context(mpegts_encoder_ctx->format_context);
         if (avpipe_opaque)
             free(avpipe_opaque);
+        
+        elv_dbg("Checkpoint 7.5");
     }
 #ifdef USE_RESAMPLE_AAC
     if ((*xctx)->params && !strcmp((*xctx)->params->ecodec2, "aac")) {
@@ -4981,25 +5005,37 @@ avpipe_fini(
     }
 #endif
 
+    elv_dbg("Checkpoint 8");
+
     if ((*xctx)->in_handlers && (*xctx)->inctx && (*xctx)->inctx->opaque) {
         // inctx->opaque is allocated by either in_opener or udp_in_opener
         free((*xctx)->inctx->opaque);
         (*xctx)->inctx->opaque = NULL;
     }
+
+    elv_dbg("Checkpoint 9");
     
     // These are allocated in set_handlers, which is called before avpipe_init in xc_init
     free((*xctx)->in_handlers);
     free((*xctx)->out_handlers);
 
+    elv_dbg("Checkpoint 10");
+
     if ((*xctx)->inctx && (*xctx)->inctx->udp_channel)
         elv_channel_fini(&((*xctx)->inctx->udp_channel));
     free((*xctx)->inctx);
+
+    elv_dbg("Checkpoint 11");
     elv_channel_fini(&((*xctx)->vc));
     elv_channel_fini(&((*xctx)->ac));
+
+    elv_dbg("Checkpoint 12");
 
     avpipe_free_params(*xctx);
     free(*xctx);
     *xctx = NULL;
+
+    elv_dbg("Checkpoint 13");
 
     return 0;
 }

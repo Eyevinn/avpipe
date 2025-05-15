@@ -434,6 +434,8 @@ func (h *ioHandler) InReader(buf []byte) (int, error) {
 	if traceIo {
 		log.Debug("InReader()", "buf_size", len(buf), "n", n, "error", err)
 	}
+
+	log.Debug("FORCE REBUILD")
 	return n, err
 }
 

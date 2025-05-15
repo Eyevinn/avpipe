@@ -4973,9 +4973,14 @@ avpipe_fini(
 
     if ((*xctx)->params->copy_mpegts) {
         elv_dbg("Checkpoint 7.1");
+        elv_dbg("Checkpoint 7.1.1: format_context=%p", encoder_context->format_context);
+        elv_dbg("Checkpoint 7.1.2: format_context->pb=%p", encoder_context->format_context->pb);
         void *avpipe_opaque;
+        elv_dbg("Checkpoint 7.1.3:");
         cp_ctx_t *cp_ctx = &(*xctx)->cp_ctx;
+        elv_dbg("Checkpoint 7.1.4:");
         coderctx_t *mpegts_encoder_ctx = &cp_ctx->encoder_ctx;
+        elv_dbg("Checkpoint 7.1.5:");
         if ((rc = avio_close(mpegts_encoder_ctx->format_context->pb)) < 0)
             elv_warn("Encountered error closing input, url=%s, rc=%d, rc_str=%s", mpegts_encoder_ctx->format_context->url, rc, av_err2str(rc));
         
